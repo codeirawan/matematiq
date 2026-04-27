@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MatematIQ SD 🔢</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#0d0f1a; --surface:#161927; --card:#1e2235; --border:#2a2f4a;
+    --accent:#7c5cfc; --accent2:#fc5c7d; --accent3:#5cfcb8; --accent4:#fcbc5c;
+    --text:#e8eaf6; --muted:#8892b0; --correct:#5cfcb8; --wrong:#fc5c7d;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font-family:'Nunito',sans-serif; min-height:100vh; overflow-x:hidden; }
+  body::before { content:''; position:fixed; inset:0;
+    background-image: linear-gradient(rgba(124,92,252,.05) 1px,transparent 1px), linear-gradient(90deg,rgba(124,92,252,.05) 1px,transparent 1px);
+    background-size:40px 40px; pointer-events:none; z-index:0; }
+  .container { max-width:820px; margin:0 auto; padding:24px 16px; position:relative; z-index:1; }
+  header { text-align:center; margin-bottom:28px; }
+  header h1 { font-family:'Fredoka One',cursive; font-size:2.4rem;
+    background:linear-gradient(135deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+  header p { color:var(--muted); font-size:.92rem; margin-top:4px; }
+  .tabs { display:flex; gap:8px; justify-content:center; margin-bottom:24px; flex-wrap:wrap; }
+  .tab { padding:10px 22px; border-radius:50px; border:2px solid var(--border);
+    background:var(--surface); color:var(--muted); cursor:pointer;
+    font-family:'Nunito',sans-serif; font-size:.9rem; font-weight:700; transition:all .2s; }
+  .tab:hover { border-color:var(--accent); color:var(--accent); }
+  .tab.active { background:var(--accent); border-color:var(--accent); color:#fff; }
+  .scorebar { display:flex; justify-content:space-between; align-items:center;
+    background:var(--surface); border:1px solid var(--border); border-radius:16px;
+    padding:14px 22px; margin-bottom:24px; }
+  .scorebar-item { text-align:center; }
+  .scorebar-item .val { font-family:'Fredoka One',cursive; font-size:1.5rem; }
+  .scorebar-item .lbl { font-size:.72rem; color:var(--muted); letter-spacing:1px; text-transform:uppercase; margin-top:2px; }
+  .val.green{color:var(--correct);} .val.red{color:var(--wrong);} .val.yellow{color:var(--accent4);}
+  .kelas-wrap { display:flex; gap:7px; justify-content:center; margin-bottom:18px; flex-wrap:wrap; }
+  .kelas-btn { padding:7px 15px; border-radius:30px; border:2px solid var(--border);
+    background:transparent; color:var(--muted); cursor:pointer;
+    font-family:'Nunito',sans-serif; font-size:.8rem; font-weight:800; transition:all .18s; }
+  .kelas-btn:hover { border-color:var(--accent); color:var(--accent); }
+  .kelas-btn.active { border-color:var(--accent4); color:var(--accent4); background:rgba(252,188,92,.1); }
+  .progress-wrap { background:var(--surface); border-radius:99px; height:6px; margin-bottom:20px; overflow:hidden; }
+  .progress-fill { height:100%; background:linear-gradient(90deg,var(--accent),var(--accent2)); border-radius:99px; transition:width .3s; }
+  .question-card { background:var(--card); border:1px solid var(--border); border-radius:20px;
+    padding:28px 24px; text-align:center; margin-bottom:16px;
+    animation:fadeUp .3s ease; }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+  .question-badge { display:inline-block; background:var(--accent); color:#fff;
+    font-size:.72rem; font-weight:700; padding:3px 12px; border-radius:20px;
+    letter-spacing:1px; text-transform:uppercase; margin-bottom:14px; }
+  .q-emoji { font-size:2.8rem; margin-bottom:8px; display:block;
+    animation:wiggle 2s ease-in-out infinite; }
+  @keyframes wiggle{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(4deg)}}
+  .question-text { font-family:'Fredoka One',cursive; font-size:2.4rem; color:var(--text);
+    letter-spacing:-1px; margin-bottom:8px; }
+  .question-hint { color:var(--muted); font-size:.85rem; min-height:20px; }
+  .question-hint.show-hint { color:var(--accent4); }
+  .options { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px; }
+  .option { background:var(--surface); border:2px solid var(--border); border-radius:14px;
+    padding:16px; cursor:pointer; font-family:'Fredoka One',cursive; font-size:1.5rem;
+    color:var(--text); transition:all .18s; }
+  .option:hover:not(.disabled) { border-color:var(--accent); background:rgba(124,92,252,.1); transform:scale(1.02); }
+  .option.correct { border-color:var(--correct); background:rgba(92,252,184,.12); color:var(--correct); }
+  .option.wrong { border-color:var(--wrong); background:rgba(252,92,125,.1); color:var(--wrong); }
+  .option.disabled { cursor:not-allowed; opacity:.7; }
+  .input-row { display:flex; gap:12px; margin-bottom:16px; }
+  .input-row input { flex:1; background:var(--surface); border:2px solid var(--border);
+    border-radius:14px; padding:14px 16px; color:var(--text);
+    font-family:'Fredoka One',cursive; font-size:1.5rem; text-align:center; outline:none; transition:border .18s; }
+  .input-row input:focus { border-color:var(--accent); }
+  .input-row input.correct { border-color:var(--correct); color:var(--correct); }
+  .input-row input.wrong { border-color:var(--wrong); color:var(--wrong); }
+  .btn-submit { background:var(--accent); color:#fff; border:none; border-radius:14px;
+    padding:14px 24px; cursor:pointer; font-family:'Nunito',sans-serif; font-size:1rem; font-weight:800; transition:all .18s; }
+  .btn-submit:hover { background:#9b7dff; transform:scale(1.04); }
+  .btn-submit:disabled { opacity:.5; cursor:not-allowed; transform:none; }
+  .feedback { text-align:center; font-size:1rem; font-weight:700; padding:12px;
+    border-radius:12px; margin-bottom:14px; opacity:0; transition:opacity .2s; }
+  .feedback.show { opacity:1; }
+  .feedback.correct { background:rgba(92,252,184,.1); color:var(--correct); border:1px solid rgba(92,252,184,.3); }
+  .feedback.wrong { background:rgba(252,92,125,.1); color:var(--wrong); border:1px solid rgba(252,92,125,.25); }
+  .nav-row { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
+  .btn { padding:10px 20px; border-radius:12px; border:2px solid var(--border);
+    background:var(--surface); color:var(--text); cursor:pointer;
+    font-family:'Nunito',sans-serif; font-size:.88rem; font-weight:700; transition:all .18s; }
+  .btn:hover { border-color:var(--accent); color:var(--accent); }
+  .btn.primary { background:var(--accent); border-color:var(--accent); color:#fff; }
+  .btn.primary:hover { background:#9b7dff; }
+  .btn.danger { border-color:var(--accent2); color:var(--accent2); }
+  .theory-card { background:var(--card); border:1px solid var(--border); border-radius:20px;
+    padding:22px 20px; margin-bottom:14px; animation:fadeUp .3s ease; }
+  .theory-card h3 { font-family:'Fredoka One',cursive; color:var(--accent); font-size:1rem; margin-bottom:12px; }
+  .theory-card p { color:var(--muted); font-size:.88rem; line-height:1.7; margin-bottom:8px; }
+  .formula { background:var(--surface); border-left:4px solid var(--accent);
+    padding:10px 14px; border-radius:0 10px 10px 0;
+    font-family:'Fredoka One',cursive; font-size:.95rem; color:var(--text); margin:10px 0; }
+  .example-box { background:rgba(124,92,252,.07); border:1px dashed var(--accent);
+    border-radius:12px; padding:12px 14px; margin-top:10px; }
+  .example-box .step { font-size:.86rem; color:var(--text); margin-bottom:6px; display:flex; gap:8px; align-items:flex-start; }
+  .example-box .step .num { background:var(--accent); color:#fff; border-radius:50%;
+    width:20px; height:20px; display:flex; align-items:center; justify-content:center;
+    font-size:.7rem; font-weight:800; flex-shrink:0; margin-top:1px; }
+  .tag-grid { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+  .tag { background:var(--surface); border:1px solid var(--border); border-radius:8px;
+    padding:4px 12px; font-size:.78rem; color:var(--accent3); }
+  .kelas-section { display:none; }
+  .kelas-section.active { display:block; }
+  .results { text-align:center; background:var(--card); border:1px solid var(--border);
+    border-radius:20px; padding:36px 24px; animation:fadeUp .4s ease; }
+  .results .score-big { font-family:'Fredoka One',cursive; font-size:4rem; color:var(--accent4); margin:10px 0; }
+  .results .grade { font-size:1.2rem; font-weight:800; }
+  .results .desc { color:var(--muted); font-size:.88rem; margin-bottom:20px; }
+  .breakdown { display:flex; gap:14px; justify-content:center; margin-bottom:22px; flex-wrap:wrap; }
+  .breakdown-item { background:var(--surface); border:1px solid var(--border);
+    border-radius:12px; padding:10px 18px; text-align:center; }
+  .bval { font-family:'Fredoka One',cursive; font-size:1.4rem; }
+  .streak-toast { position:fixed; top:18px; right:18px; z-index:999;
+    background:var(--accent4); color:#0d0f1a; font-weight:800;
+    padding:10px 18px; border-radius:12px; font-size:.88rem;
+    opacity:0; pointer-events:none; transition:opacity .3s; font-family:'Nunito',sans-serif; }
+  .streak-toast.show { opacity:1; }
+  .ch-timer-bar { background:var(--surface); border-radius:99px; height:8px; margin-bottom:16px; overflow:hidden; }
+  .ch-timer-fill { height:100%; background:linear-gradient(90deg,var(--correct),var(--accent4)); border-radius:99px; transition:width .95s linear; }
+  @media(max-width:500px) {
+    header h1 { font-size:1.9rem; }
+    .question-text { font-size:1.9rem; }
+    .option { font-size:1.2rem; padding:13px; }
+  }
+</style>
+</head>
+<body>
+<div class="streak-toast" id="streakToast"></div>
+<div class="container">
+  <header>
+    <h1>MatematIQ SD 🔢</h1>
+    <p>Latihan Matematika Kelas 1–6 SD</p>
+  </header>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('soal')">🎯 Latihan Soal</button>
+    <button class="tab" onclick="switchTab('teori')">📖 Materi</button>
+    <button class="tab" onclick="switchTab('tantangan')">⚡ Tantangan</button>
+  </div>
+
+  <!-- LATIHAN SOAL -->
+  <div id="tab-soal">
+    <div class="scorebar">
+      <div class="scorebar-item"><div class="val green" id="sc-benar">0</div><div class="lbl">Benar</div></div>
+      <div class="scorebar-item"><div class="val red" id="sc-salah">0</div><div class="lbl">Salah</div></div>
+      <div class="scorebar-item"><div class="val yellow" id="sc-streak">0🔥</div><div class="lbl">Streak</div></div>
+      <div class="scorebar-item"><div class="val" id="sc-no" style="color:var(--accent)">1/10</div><div class="lbl">Soal</div></div>
+    </div>
+    <div class="kelas-wrap">
+      <button class="kelas-btn active" onclick="setKelas(1,this)">📚 Kelas 1</button>
+      <button class="kelas-btn" onclick="setKelas(2,this)">📚 Kelas 2</button>
+      <button class="kelas-btn" onclick="setKelas(3,this)">📚 Kelas 3</button>
+      <button class="kelas-btn" onclick="setKelas(4,this)">📚 Kelas 4</button>
+      <button class="kelas-btn" onclick="setKelas(5,this)">📚 Kelas 5</button>
+      <button class="kelas-btn" onclick="setKelas(6,this)">📚 Kelas 6</button>
+    </div>
+    <div class="progress-wrap"><div class="progress-fill" id="progressBar" style="width:10%"></div></div>
+    <div id="soal-area"></div>
+  </div>
+
+  <!-- MATERI -->
+  <div id="tab-teori" style="display:none">
+    <div class="kelas-wrap" style="margin-bottom:16px">
+      <button class="kelas-btn active" onclick="setTeoriKelas(1,this)">Kelas 1</button>
+      <button class="kelas-btn" onclick="setTeoriKelas(2,this)">Kelas 2</button>
+      <button class="kelas-btn" onclick="setTeoriKelas(3,this)">Kelas 3</button>
+      <button class="kelas-btn" onclick="setTeoriKelas(4,this)">Kelas 4</button>
+      <button class="kelas-btn" onclick="setTeoriKelas(5,this)">Kelas 5</button>
+      <button class="kelas-btn" onclick="setTeoriKelas(6,this)">Kelas 6</button>
+    </div>
+    <!-- Kelas 1 -->
+    <div class="kelas-section active" id="teori-1">
+      <div class="theory-card">
+        <h3>🔢 Mengenal Bilangan 1–100</h3>
+        <p>Di Kelas 1, kamu belajar mengenal angka 1 sampai 100, menghitung maju dan mundur.</p>
+        <div class="formula">1, 2, 3, 4, 5, ... , 98, 99, 100</div>
+        <div class="example-box">
+          <div class="step"><div class="num">1</div><div>Hitung maju: 5, 6, 7, 8, 9, 10 ...</div></div>
+          <div class="step"><div class="num">2</div><div>Hitung mundur: 10, 9, 8, 7, 6, 5 ...</div></div>
+          <div class="step"><div class="num">3</div><div>Membandingkan: 7 &gt; 5 (tujuh lebih besar dari lima)</div></div>
+        </div>
+      </div>
+      <div class="theory-card">
+        <h3>➕ Penjumlahan &amp; Pengurangan Dasar</h3>
+        <div class="formula">3 + 4 = 7 &nbsp;|&nbsp; 9 − 5 = 4</div>
+        <div class="example-box">
+          <div class="step"><div class="num">1</div><div>3 + 4: mulai dari 3, hitung 4 langkah → 4, 5, 6, <b>7</b></div></div>
+          <div class="step"><div class="num">2</div><div>9 − 5: dari 9, mundur 5 langkah → <b>4</b></div></div>
+        </div>
+      </div>
+    </div>
+    <!-- Kelas 2 -->
+    <div class="kelas-section" id="teori-2">
+      <div class="theory-card">
+        <h3>➕ Penjumlahan &amp; Pengurangan Bilangan Ratusan</h3>
+        <div class="formula">125 + 43 = 168 &nbsp;|&nbsp; 200 − 75 = 125</div>
+        <div class="example-box">
+          <div class="step"><div class="num">1</div><div>Susun ke bawah: satuan + satuan, puluhan + puluhan, dst.</div></div>
+          <div class="step"><div class="num">2</div><div>125 + 43: (5+3=8), (2+4=6), (1+0=1) → <b>168</b></div></div>
+          <div class="step"><div class="num">3</div><div>Jika ada simpan 1, tambahkan ke kolom berikutnya!</div></div>
+        </div>
+      </div>
+      <div class="theory-card">
+        <h3>✖️ Pengenalan Perkalian (2–5)</h3>
+        <p>Perkalian adalah penjumlahan berulang!</p>
+        <div class="formula">3 × 4 = 4 + 4 + 4 = 12</div>
+        <div class="example-box">
+          <div class="step"><div class="num">1</div><div>2×5 = 5+5 = <b>10</b></div></div>
+          <div class="step"><div class="num">2</div><div>3×3 = 3+3+3 = <b>9</b></div></div>
+          <div class="step"><div class="num">3</div><div>5×4 = 4+4+4+4+4 = <b>20</b></div></div>
+        </div>
+      </div>
+    </div>
+    <!-- Kelas 3 -->
+    <div class="kelas-section" id="teori-3">
+      <div class="theory-card">
+        <h3>✖️ Perkalian 1–10 (Tabel Perkalian)</h3>
+        <div class="formula">a × b = b × a (Komutatif)</div>
+        <div class="example-box">
+          <div class="step"><div class="num">1</div><div>7 × 8 = 8 × 7 = <b>56</b></div></div>
+          <div class="step"><div class="num">2</div><div>Trick ×9: kalikan 10 lalu kurang 1×. 9×6 = 60−6 = <b>54</b></div></div>
+          <div class="step"><div class="num">3</div><div>Trick ×5: bagi 2 lalu kali 10. 5×8 = 8÷2×10 = <b>40</b></div></div>
+        </div>
+      </div>
+      <div class="theory-card">
+        <h3>➗ Pembagian Dasar</h3>
+        <div class="formula">a ÷ b = c &nbsp;⟺&nbsp; b × c = a</div>
+        <div class="example-box">
+          <div class="step"><div class="num">1</div><div>24 ÷ 6 = ? → 6 × ? = 24 → jawab: <b>4</b></div></div>
+          <div class="step"><div class="num">2</div><div>35 ÷ 7 = ? → 7 × ? = 35 → jawab: <b>5</b></div></div>
+        </div>
+      </div>
+    </div>
+    <!-- Kelas 4 -->
+    <div class="kelas-section" id="teori-4">
+      <div class="theory-card">
+        <h3>🔢 Bilangan Ribuan &amp; Operasi Campuran</h3>
+        <div class="formula">1.234 + 2.567 = 3.801</div>
+        <div class="example-box">
+          <div class="step"><div class="num">1</div><div>Urutan operasi: Kali/Bagi dulu, baru Tambah/Kurang</div></div>
+          <div class="step"><div class="num">2</div><div>4 + 3 × 5 = 4 + 15 = <b>19</b> (bukan 35!)</div></div>
+          <div class="step"><div class="num">3</div><div>Jika ada kurung, kerjakan kurung dulu: (4+3) × 5 = 7 × 5 = <b>35</b></div></div>
+        </div>
+      </div>
+      <div class="theory-card">
+        <h3>➗ FPB &amp; KPK</h3>
+        <div class="formula">FPB = Faktor Persekutuan Terbesar</div>
+        <div class="formula">KPK = Kelipatan Persekutuan Terkecil</div>
+        <div class="example-box">
+          <div class="step"><div class="num">1</div><div>FPB(12,8): faktor 12={1,2,3,4,6,12}, faktor 8={1,2,4,8} → FPB=<b>4</b></div></div>
+          <div class="step"><div class="num">2</div><div>KPK(4,6): kelipatan 4={4,8,12,...}, kelipatan 6={6,12,...} → KPK=<b>12</b></div></div>
+        </div>
+      </div>
+    </div>
+    <!-- Kelas 5 -->
+    <div class="kelas-section" id="teori-5">
+      <div class="theory-card">
+        <h3>🍕 Pecahan (Penjumlahan &amp; Pengurangan)</h3>
+        <div class="formula">a/b + c/b = (a+c)/b &nbsp; (penyebut sama)</div>
+        <div class="formula">a/b + c/d → samakan penyebut dulu (KPK)</div>
+        <div class="example-box">
+          <div class="step"><div class="num">1</div><div>1/4 + 2/4 = 3/4 ✓ (penyebut sama)</div></div>
+          <div class="step"><div class="num">2</div><div>1/3 + 1/4: KPK(3,4)=12 → 4/12 + 3/12 = <b>7/12</b></div></div>
+          <div class="step"><div class="num">3</div><div>Sederhanakan: 6/8 = 3/4 (bagi FPB=2)</div></div>
+        </div>
+      </div>
+      <div class="theory-card">
+        <h3>📊 Persen &amp; Desimal</h3>
+        <div class="formula">50% = 50/100 = 0,5</div>
+        <div class="example-box">
+          <div class="step"><div class="num">1</div><div>25% dari 80 = 80 × 25/100 = 80 × 0,25 = <b>20</b></div></div>
+          <div class="step"><div class="num">2</div><div>0,75 = 75/100 = 3/4 = <b>75%</b></div></div>
+        </div>
+      </div>
+    </div>
+    <!-- Kelas 6 -->
+    <div class="kelas-section" id="teori-6">
+      <div class="theory-card">
+        <h3>📐 Luas &amp; Keliling Bangun Datar</h3>
+        <div class="formula">Persegi: L = s × s, K = 4 × s</div>
+        <div class="formula">Persegi panjang: L = p × l, K = 2 × (p + l)</div>
+        <div class="formula">Segitiga: L = ½ × a × t</div>
+        <div class="example-box">
+          <div class="step"><div class="num">1</div><div>Persegi sisi 6 cm: L = 6×6 = <b>36 cm²</b>, K = 4×6 = <b>24 cm</b></div></div>
+          <div class="step"><div class="num">2</div><div>Persegi panjang 8×5: L = 8×5 = <b>40 cm²</b></div></div>
+          <div class="step"><div class="num">3</div><div>Lingkaran: L = π×r², K = 2×π×r (π ≈ 3,14)</div></div>
+        </div>
+      </div>
+      <div class="theory-card">
+        <h3>📦 Volume Bangun Ruang</h3>
+        <div class="formula">Kubus: V = s × s × s = s³</div>
+        <div class="formula">Balok: V = p × l × t</div>
+        <div class="example-box">
+          <div class="step"><div class="num">1</div><div>Kubus sisi 4 cm: V = 4³ = <b>64 cm³</b></div></div>
+          <div class="step"><div class="num">2</div><div>Balok 5×3×4 cm: V = 5×3×4 = <b>60 cm³</b></div></div>
+        </div>
+      </div>
+      <div class="theory-card">
+        <h3>🏃 Kecepatan, Jarak, Waktu</h3>
+        <div class="formula">Jarak = Kecepatan × Waktu</div>
+        <div class="formula">Kecepatan = Jarak ÷ Waktu</div>
+        <div class="example-box">
+          <div class="step"><div class="num">1</div><div>Kecepatan 60 km/jam, waktu 2 jam → Jarak = 60×2 = <b>120 km</b></div></div>
+          <div class="step"><div class="num">2</div><div>Jarak 90 km, waktu 3 jam → Kecepatan = 90÷3 = <b>30 km/jam</b></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TANTANGAN -->
+  <div id="tab-tantangan" style="display:none">
+    <div id="challenge-area"></div>
+  </div>
+</div>
+
+<script>
+/* ══════════════════ GENERATORS PER KELAS ══════════════════ */
+function rand(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
+function shuffle(arr){return arr.sort(()=>Math.random()-.5);}
+function gcd(a,b){return b===0?a:gcd(b,a%b);}
+function isValidNum(n){return typeof n==='number'&&isFinite(n)&&!isNaN(n);}
+
+// ── generators ──
+function genAdd(aMin,aMax,bMin,bMax){
+  const a=rand(aMin,aMax),b=rand(bMin,bMax);
+  return {q:`${a} + ${b} = ?`,ans:a+b,type:'pilihan',em:['➕','🧮','📐'][rand(0,2)]};
+}
+function genSub(aMin,aMax,bMin,bMax){
+  let a=rand(aMin,aMax),b=rand(bMin,bMax);
+  if(b>a){const t=a;a=b;b=t;} // pastikan tidak negatif
+  return {q:`${a} − ${b} = ?`,ans:a-b,type:'pilihan',em:['➖','🧮','🔢'][rand(0,2)]};
+}
+function genMul(aMin,aMax,bMin,bMax){
+  const a=rand(aMin,aMax),b=rand(bMin,bMax);
+  return {q:`${a} × ${b} = ?`,ans:a*b,type:'pilihan',em:['✖️','🔢','💡'][rand(0,2)]};
+}
+function genDiv(bMin,bMax,kMin,kMax){
+  const b=rand(bMin,bMax),k=rand(kMin,kMax);
+  return {q:`${b*k} ÷ ${b} = ?`,ans:k,type:'pilihan',em:['➗','🧮','💡'][rand(0,2)]};
+}
+function genPct(){
+  const pcts=[10,20,25,50],p=pcts[rand(0,pcts.length-1)];
+  const bases=[20,40,60,80,100,120,200];
+  const base=bases[rand(0,bases.length-1)];
+  const ans=base*p/100;
+  return {q:`${p}% dari ${base} = ?`,ans,type:'pilihan',em:'📊'};
+}
+function genFrac(){
+  // penjumlahan pecahan sama penyebut
+  const d=rand(2,8),a=rand(1,d-1),b=rand(1,d-a);
+  const ansN=a+b,ansD=d;
+  const g=gcd(ansN,ansD);
+  const ansStr=ansD/g===1?`${ansN/g}`:`${ansN/g}/${ansD/g}`;
+  return {q:`${a}/${d} + ${b}/${d} = ?`,ans:ansStr,type:'input',em:'🍕'};
+}
+function genFracSub(){
+  const d=rand(2,8),a=rand(1,d),b=rand(1,a);
+  const ansN=a-b,ansD=d;
+  const g=gcd(Math.abs(ansN),ansD);
+  const ansStr=ansN===0?'0':(ansD/g===1?`${ansN/g}`:`${ansN/g}/${ansD/g}`);
+  return {q:`${a}/${d} − ${b}/${d} = ?`,ans:ansStr,type:'input',em:'🍕'};
+}
+function genLuas(shape){
+  if(shape==='persegi'){
+    const s=rand(2,12);
+    return {q:`Luas persegi dengan sisi ${s} cm = ? cm²`,ans:s*s,type:'pilihan',em:'🟦'};
+  }
+  if(shape==='persegipanjang'){
+    const p=rand(3,12),l=rand(2,9);
+    return {q:`Luas persegi panjang ${p}×${l} cm = ? cm²`,ans:p*l,type:'pilihan',em:'📏'};
+  }
+  // segitiga
+  const a=rand(2,10)*2,t=rand(2,10); // alas genap biar jawaban bulat
+  return {q:`Luas segitiga alas ${a} cm, tinggi ${t} cm = ? cm²`,ans:a*t/2,type:'pilihan',em:'🔺'};
+}
+function genVolume(shape){
+  if(shape==='kubus'){
+    const s=rand(2,7);
+    return {q:`Volume kubus sisi ${s} cm = ? cm³`,ans:s*s*s,type:'pilihan',em:'🟪'};
+  }
+  const p=rand(2,8),l=rand(2,6),t=rand(2,6);
+  return {q:`Volume balok ${p}×${l}×${t} cm = ? cm³`,ans:p*l*t,type:'pilihan',em:'📦'};
+}
+function genKJT(){
+  // Jarak = Kecepatan × Waktu
+  const v=[20,30,40,50,60,80,100][rand(0,6)];
+  const t=rand(1,5);
+  const j=v*t;
+  const r=rand(0,2);
+  if(r===0) return {q:`Kecepatan ${v} km/jam, waktu ${t} jam. Jarak = ? km`,ans:j,type:'pilihan',em:'🚗'};
+  if(r===1) return {q:`Jarak ${j} km, waktu ${t} jam. Kecepatan = ? km/jam`,ans:v,type:'pilihan',em:'🚗'};
+  return {q:`Jarak ${j} km, kecepatan ${v} km/jam. Waktu = ? jam`,ans:t,type:'pilihan',em:'⏱️'};
+}
+function genFPB(){
+  const pairs=[[12,8],[15,10],[18,12],[24,16],[20,15],[30,18],[36,24],[16,12]];
+  const [a,b]=pairs[rand(0,pairs.length-1)];
+  const ans=gcd(a,b);
+  return {q:`FPB dari ${a} dan ${b} = ?`,ans,type:'pilihan',em:'🔢'};
+}
+function genKPK(){
+  const pairs=[[4,6],[3,5],[6,8],[4,10],[5,6],[3,8],[6,9],[4,12]];
+  const [a,b]=pairs[rand(0,pairs.length-1)];
+  // kpk = a*b/gcd(a,b)
+  const ans=a*b/gcd(a,b);
+  return {q:`KPK dari ${a} dan ${b} = ?`,ans,type:'pilihan',em:'🔁'};
+}
+function genOpCampuran(){
+  const a=rand(2,9),b=rand(2,9),c=rand(2,9);
+  const r=rand(0,1);
+  if(r===0){
+    // a + b × c
+    return {q:`${a} + ${b} × ${c} = ?`,ans:a+b*c,type:'pilihan',em:'🧮'};
+  }
+  // (a + b) × c
+  return {q:`(${a} + ${b}) × ${c} = ?`,ans:(a+b)*c,type:'pilihan',em:'🧮'};
+}
+
+// ── pools per kelas ──
+const pools = {
+  1:[
+    ()=>genAdd(1,9,1,9),
+    ()=>genAdd(1,9,1,9),
+    ()=>genSub(1,10,1,9),
+    ()=>genSub(1,10,1,9),
+    ()=>genAdd(10,20,1,9),
+    ()=>genSub(10,20,1,9),
+  ],
+  2:[
+    ()=>genAdd(10,99,10,90),
+    ()=>genSub(20,99,10,50),
+    ()=>genMul(2,5,1,9),
+    ()=>genMul(2,5,1,9),
+    ()=>genAdd(100,200,10,90),
+    ()=>genSub(100,200,10,90),
+  ],
+  3:[
+    ()=>genMul(2,9,2,9),
+    ()=>genMul(2,9,2,9),
+    ()=>genDiv(2,9,1,9),
+    ()=>genDiv(2,9,1,9),
+    ()=>genMul(10,30,2,5),
+    ()=>genAdd(100,999,100,500),
+  ],
+  4:[
+    ()=>genMul(11,50,2,9),
+    ()=>genDiv(2,9,10,40),
+    ()=>genOpCampuran(),
+    ()=>genOpCampuran(),
+    ()=>genFPB(),
+    ()=>genKPK(),
+  ],
+  5:[
+    ()=>genFrac(),
+    ()=>genFracSub(),
+    ()=>genPct(),
+    ()=>genPct(),
+    ()=>genMul(11,99,11,50),
+    ()=>genDiv(2,9,10,99),
+  ],
+  6:[
+    ()=>genLuas(['persegi','persegipanjang','segitiga'][rand(0,2)]),
+    ()=>genLuas(['persegi','persegipanjang','segitiga'][rand(0,2)]),
+    ()=>genVolume(['kubus','balok'][rand(0,1)]),
+    ()=>genVolume(['kubus','balok'][rand(0,1)]),
+    ()=>genKJT(),
+    ()=>genKJT(),
+  ],
+};
+
+/* ══════════════════ makeChoices ══════════════════ */
+function makeChoices(ans){
+  if(typeof ans==='string'&&ans.includes('/')){
+    const choices=[ans];
+    const parts=ans.split('/');
+    const origN=parseInt(parts[0]),origD=parseInt(parts[1]);
+    let tries=0;
+    while(choices.length<4&&tries<200){
+      tries++;
+      const nn=origN+rand(-3,3),dd=origD+rand(-2,2);
+      if(nn<=0||dd<=0)continue;
+      const g=gcd(Math.abs(nn),dd);
+      const s=dd/g===1?`${nn/g}`:`${nn/g}/${dd/g}`;
+      if(!choices.includes(s))choices.push(s);
+    }
+    while(choices.length<4)choices.push(`${origN+choices.length}/${origD}`);
+    return shuffle(choices);
+  }
+  const n=parseFloat(String(ans));
+  if(!isValidNum(n))return ['0','1','2','3'];
+  const set=new Set([String(n)]);
+  let tries=0;
+  const mag=Math.abs(n);
+  while(set.size<4&&tries<200){
+    tries++;
+    let delta;
+    if(mag>500) delta=rand(-80,80);
+    else if(mag>100)delta=rand(-40,40);
+    else if(mag>20) delta=rand(-10,10);
+    else            delta=rand(-5,5);
+    if(delta===0)continue;
+    const c=Math.round((n+delta)*100)/100;
+    if(isValidNum(c)&&c!==n&&c>=0)set.add(String(c));
+  }
+  let extra=1;
+  while(set.size<4){set.add(String(Math.round(n+extra)));extra++;}
+  return shuffle([...set]);
+}
+
+/* ══════════════════ STATE ══════════════════ */
+let currentKelas=1;
+let questions=[],qIdx=0,benar=0,salah=0,streak=0,answered=false;
+let currentChoices=[],currentAnswer='';
+let challengeActive=false,challengeTimer=null,challengeScore=0,challengeTime=0;
+
+function setKelas(k,el){
+  currentKelas=k;
+  document.querySelectorAll('.kelas-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  buildQuestions();
+}
+
+function buildQuestions(){
+  questions=[];
+  const pool=pools[currentKelas];
+  const shuffledPool=shuffle(pool.slice());
+  for(let i=0;i<10;i++) questions.push(shuffledPool[i%shuffledPool.length]());
+  qIdx=0;benar=0;salah=0;streak=0;
+  updateScore();
+  renderQuestion();
+}
+
+/* ══════════════════ RENDER ══════════════════ */
+function renderQuestion(){
+  const area=document.getElementById('soal-area');
+  if(qIdx>=questions.length){renderResults();return;}
+  answered=false;
+  const q=questions[qIdx];
+  document.getElementById('sc-no').textContent=`${qIdx+1}/10`;
+  document.getElementById('progressBar').style.width=`${(qIdx/10)*100+10}%`;
+
+  let html=`
+    <div class="question-card">
+      <div class="question-badge">Kelas ${currentKelas} — ${q.type==='input'?'Tulis Jawaban':'Pilih Jawaban'}</div>
+      <span class="q-emoji">${q.em||'🔢'}</span>
+      <div class="question-text">${q.q}</div>
+      <div class="question-hint" id="q-hint">Klik 💡 Petunjuk jika perlu bantuan</div>
+    </div>
+    <div id="feedback-box" class="feedback"></div>
+  `;
+
+  if(q.type==='input'){
+    html+=`
+      <div class="input-row">
+        <input type="text" id="ans-input" placeholder="Jawaban..." autocomplete="off"
+          onkeydown="if(event.key==='Enter')checkInput()">
+        <button class="btn-submit" id="btn-check" onclick="checkInput()">Periksa</button>
+      </div>
+    `;
+  } else {
+    currentChoices=makeChoices(q.ans);
+    currentAnswer=String(q.ans);
+    html+=`<div class="options">`;
+    currentChoices.forEach((c,i)=>{
+      html+=`<button class="option" onclick="checkOption(${i})">${c}</button>`;
+    });
+    html+=`</div>`;
+  }
+
+  html+=`
+    <div class="nav-row">
+      <button class="btn" onclick="showHint()">💡 Petunjuk</button>
+      <button class="btn danger" onclick="buildQuestions()">🔄 Reset</button>
+    </div>
+  `;
+  area.innerHTML=html;
+  if(q.type==='input') setTimeout(()=>document.getElementById('ans-input')?.focus(),80);
+}
+
+function showHint(){
+  const q=questions[qIdx];
+  const hint=document.getElementById('q-hint');
+  if(!hint)return;
+  hint.classList.add('show-hint');
+  const hints={
+    1:'💡 Coba hitung pakai jari atau gambar lingkaran!',
+    2:'💡 Susun angkanya ke bawah, kerjakan satuan dulu!',
+    3:'💡 Ingat tabel perkalian. Coba hafal 1-10!',
+    4:'💡 Kerjakan tanda kurung dulu, lalu ×÷, baru +-',
+    5:'💡 Samakan penyebut dulu pakai KPK!',
+    6:'💡 Ingat rumus: Luas = panjang × lebar',
+  };
+  hint.innerHTML=hints[currentKelas]||`💡 Jawaban: ${q.ans}`;
+}
+
+function checkOption(idx){
+  if(answered)return;
+  answered=true;
+  const chosen=currentChoices[idx];
+  const correct=currentAnswer;
+  const frozenQi=qIdx;
+  const btns=document.querySelectorAll('.option');
+  btns.forEach(o=>o.classList.add('disabled'));
+  if(chosen===correct){
+    btns[idx].classList.add('correct');
+    handleCorrect();
+  } else {
+    btns[idx].classList.add('wrong');
+    currentChoices.forEach((c,i)=>{if(String(c)===correct) btns[i].classList.add('correct');});
+    handleWrong();
+  }
+  setTimeout(()=>{qIdx++;renderQuestion();},1300);
+}
+
+function checkInput(){
+  if(answered)return;
+  const input=document.getElementById('ans-input');
+  const btn=document.getElementById('btn-check');
+  if(!input)return;
+  const val=input.value.trim();
+  if(!val)return;
+  answered=true;
+  btn.disabled=true;
+  const q=questions[qIdx];
+  const correct=String(q.ans);
+  const normalize=s=>{
+    if(s.includes('/')){const[n,d]=s.split('/').map(Number);return Math.round(n/d*10000)/10000;}
+    return parseFloat(s);
+  };
+  const ok=Math.abs(normalize(val)-normalize(correct))<0.001;
+  if(ok){input.classList.add('correct');handleCorrect();}
+  else{input.classList.add('wrong');handleWrong();showFeedback(`❌ Salah! Jawaban: ${correct}`,false);}
+  setTimeout(()=>{qIdx++;renderQuestion();},1500);
+}
+
+function handleCorrect(){
+  benar++;streak++;updateScore();
+  const msgs=['✅ Benar! 🎉','✅ Hebat! 🌟','✅ Pintar! 👏','✅ Mantap! 🔥'];
+  const m=streak>=5?'✅ Luar biasa! 🏆🔥':msgs[rand(0,msgs.length-1)];
+  showFeedback(m+(streak>=3?` — ${streak} streak!`:''),true);
+  if(streak%3===0&&streak>0) showStreakToast(`🔥 ${streak} benar berturut-turut!`);
+}
+function handleWrong(){
+  salah++;streak=0;updateScore();
+  const fb=document.getElementById('feedback-box');
+  if(!fb?.textContent) showFeedback(`❌ Salah! Jawaban: ${questions[qIdx].ans}`,false);
+}
+function showFeedback(msg,ok){
+  const fb=document.getElementById('feedback-box');
+  if(!fb)return;
+  fb.textContent=msg;
+  fb.className=`feedback show ${ok?'correct':'wrong'}`;
+}
+function updateScore(){
+  document.getElementById('sc-benar').textContent=benar;
+  document.getElementById('sc-salah').textContent=salah;
+  document.getElementById('sc-streak').textContent=streak+'🔥';
+}
+function renderResults(){
+  const pct=Math.round(benar/10*100);
+  let grade,desc;
+  if(pct>=90){grade='A+ 🏆';desc='Luar biasa! Kamu menguasai materi Kelas '+currentKelas+'!';}
+  else if(pct>=80){grade='A 🌟';desc='Bagus sekali! Hampir sempurna.';}
+  else if(pct>=70){grade='B 👍';desc='Cukup baik, tingkatkan lagi!';}
+  else if(pct>=60){grade='C 📚';desc='Perlu lebih banyak latihan.';}
+  else{grade='D 💪';desc='Jangan menyerah! Pelajari dulu materinya.';}
+  document.getElementById('soal-area').innerHTML=`
+    <div class="results">
+      <div style="font-size:.9rem;color:var(--muted);font-weight:700;letter-spacing:2px;text-transform:uppercase">Hasil Kelas ${currentKelas}</div>
+      <div class="score-big">${pct}%</div>
+      <div class="grade">${grade}</div>
+      <div class="desc">${desc}</div>
+      <div class="breakdown">
+        <div class="breakdown-item"><div class="bval" style="color:var(--correct)">${benar}</div><div style="font-size:.72rem;color:var(--muted)">Benar</div></div>
+        <div class="breakdown-item"><div class="bval" style="color:var(--wrong)">${salah}</div><div style="font-size:.72rem;color:var(--muted)">Salah</div></div>
+        <div class="breakdown-item"><div class="bval" style="color:var(--accent4)">10</div><div style="font-size:.72rem;color:var(--muted)">Total</div></div>
+      </div>
+      <div class="nav-row" style="justify-content:center">
+        <button class="btn primary" onclick="buildQuestions()">🔄 Main Lagi</button>
+        <button class="btn" onclick="switchTab('teori')">📖 Materi</button>
+      </div>
+    </div>`;
+}
+function showStreakToast(msg){
+  const t=document.getElementById('streakToast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+/* ══════════════════ TANTANGAN ══════════════════ */
+function buildChallenge(){
+  challengeScore=0;challengeTime=30;challengeActive=true;
+  renderChallenge();
+  challengeTimer=setInterval(()=>{
+    challengeTime--;
+    const el=document.getElementById('ch-time');
+    if(el)el.textContent=challengeTime;
+    const fill=document.getElementById('ch-fill');
+    if(fill)fill.style.width=(challengeTime/30*100)+'%';
+    if(challengeTime<=0){clearInterval(challengeTimer);endChallenge();}
+  },1000);
+}
+
+function renderChallenge(){
+  const area=document.getElementById('challenge-area');
+  if(!challengeActive){
+    area.innerHTML=`<div class="results">
+      <div style="font-size:.9rem;color:var(--muted);font-weight:700;letter-spacing:2px;text-transform:uppercase">Tantangan Cepat</div>
+      <p style="color:var(--muted);margin:12px 0 20px;font-size:.9rem">Jawab sebanyak mungkin dalam <b style="color:var(--accent)">30 detik</b>!</p>
+      <div style="margin-bottom:16px">
+        <span style="color:var(--muted);font-size:.82rem;font-weight:700">Pilih kelas:</span><br><br>
+        <div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap">
+          ${[1,2,3,4,5,6].map(k=>`<button class="btn" onclick="currentKelas=${k};buildChallenge()" style="padding:8px 14px">Kelas ${k}</button>`).join('')}
+        </div>
+      </div>
+      <button class="btn primary" onclick="buildChallenge()">▶ Mulai Kelas ${currentKelas}!</button>
+    </div>`;
+    return;
+  }
+  const pool=pools[currentKelas];
+  const q=pool[rand(0,pool.length-1)]();
+  // force pilihan untuk speed
+  q.type='pilihan';
+  const choices=makeChoices(q.ans);
+  const chChoices=choices;
+  const chAnswer=String(q.ans);
+  area.innerHTML=`
+    <div class="scorebar">
+      <div class="scorebar-item"><div class="val yellow" id="ch-time">${challengeTime}</div><div class="lbl">Detik</div></div>
+      <div class="scorebar-item"><div class="val green">${challengeScore}</div><div class="lbl">Skor</div></div>
+    </div>
+    <div class="ch-timer-bar"><div class="ch-timer-fill" id="ch-fill" style="width:${challengeTime/30*100}%"></div></div>
+    <div class="question-card">
+      <div class="question-badge">⚡ KELAS ${currentKelas} — CEPAT!</div>
+      <span class="q-emoji">${q.em||'🔢'}</span>
+      <div class="question-text">${q.q}</div>
+    </div>
+    <div class="options" id="ch-opts">
+      ${chChoices.map((c,i)=>`<button class="option" onclick="challengeAnswer(${i})" data-ans="${c}">${c}</button>`).join('')}
+    </div>`;
+  // store for answer check
+  window._chChoices=chChoices;
+  window._chAnswer=chAnswer;
+}
+
+function challengeAnswer(idx){
+  if(!challengeActive)return;
+  const chosen=String(window._chChoices[idx]);
+  if(chosen===window._chAnswer) challengeScore++;
+  renderChallenge();
+}
+
+function endChallenge(){
+  challengeActive=false;
+  const area=document.getElementById('challenge-area');
+  let grade,emoji;
+  if(challengeScore>=15){grade='Master! 🏆';emoji='🔥';}
+  else if(challengeScore>=10){grade='Hebat! 🌟';emoji='⭐';}
+  else if(challengeScore>=5){grade='Bagus! 👍';emoji='💪';}
+  else{grade='Latihan terus!';emoji='📚';}
+  area.innerHTML=`<div class="results">
+    <div style="font-size:3rem">${emoji}</div>
+    <div class="score-big">${challengeScore}</div>
+    <div class="grade">${grade}</div>
+    <div class="desc">Kamu menjawab ${challengeScore} soal benar dalam 30 detik!</div>
+    <div class="nav-row" style="justify-content:center;margin-top:8px">
+      <button class="btn primary" onclick="buildChallenge()">🔄 Coba Lagi</button>
+    </div>
+  </div>`;
+}
+
+/* ══════════════════ TABS & TEORI ══════════════════ */
+function switchTab(t){
+  ['soal','teori','tantangan'].forEach(id=>{
+    document.getElementById('tab-'+id).style.display=id===t?'block':'none';
+  });
+  document.querySelectorAll('.tabs .tab').forEach((el,i)=>{
+    el.classList.toggle('active',['soal','teori','tantangan'][i]===t);
+  });
+  if(t==='tantangan'&&!challengeActive&&!document.getElementById('challenge-area').innerHTML)
+    renderChallenge();
+}
+function setTeoriKelas(k,el){
+  document.querySelectorAll('#tab-teori .kelas-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('.kelas-section').forEach(s=>s.classList.remove('active'));
+  document.getElementById('teori-'+k).classList.add('active');
+}
+
+buildQuestions();
+renderChallenge();
+</script>
+</body>
+</html>
