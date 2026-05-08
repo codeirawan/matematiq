@@ -122,48 +122,37 @@
   .ch-timer-fill { height:100%; background:linear-gradient(90deg,var(--correct),var(--accent4)); border-radius:99px; transition:width .95s linear; }
 
   /* ═══ BERSUSUN STYLES ═══ */
-  .bersusun-wrap {
-    display:inline-flex; flex-direction:column; align-items:flex-end;
+  .bs-wrap {
+    display:inline-flex; flex-direction:column;
     background:var(--surface); border:2px solid var(--border);
-    border-radius:16px; padding:20px 28px; margin:16px auto;
-    gap:4px;
+    border-radius:16px; padding:20px 28px; gap:2px;
   }
-  .bersusun-col-labels { display:flex; gap:0; margin-bottom:6px; }
-  .col-label {
-    width:52px; text-align:center;
-    font-size:.65rem; font-weight:800; letter-spacing:1px;
-    color:var(--muted); text-transform:uppercase;
-  }
-  .bersusun-row { display:flex; align-items:center; gap:0; }
-  .bersusun-operator {
-    font-family:'Fredoka One',cursive; font-size:1.8rem;
-    color:var(--accent2); width:32px; text-align:center;
-    margin-right:4px; align-self:center;
-  }
-  .bersusun-digit {
-    width:52px; height:58px;
+  .bs-row { display:flex; flex-direction:row; align-items:center; justify-content:flex-end; }
+  .bs-op {
     font-family:'Fredoka One',cursive; font-size:1.9rem;
+    color:var(--accent2); width:44px; text-align:center; flex-shrink:0;
+  }
+  .bs-op-slot { width:44px; flex-shrink:0; }
+  .bs-cell {
+    width:54px; height:62px;
+    font-family:'Fredoka One',cursive; font-size:2rem;
     color:var(--text); text-align:center;
     display:flex; align-items:center; justify-content:center;
-    border-right:1px solid rgba(255,255,255,.07);
   }
-  .bersusun-digit:last-child { border-right:none; }
-  .bersusun-digit.empty { opacity:0; }
-  .bersusun-ans-box {
-    width:52px; height:58px;
-    font-family:'Fredoka One',cursive; font-size:1.9rem;
-    color:var(--accent); text-align:center;
-    display:flex; align-items:center; justify-content:center;
-    border-right:1px solid rgba(255,255,255,.07);
-    background:rgba(124,92,252,.08);
-    border-radius:8px;
+  .bs-cell.bs-empty { visibility:hidden; }
+  .bs-cell.bs-ans {
+    color:var(--accent);
+    background:rgba(124,92,252,.1);
+    border-radius:10px;
+    margin:2px 2px;
+    width:48px;
   }
-  .bersusun-ans-box:last-child { border-right:none; }
-  .bersusun-line {
-    width:100%; height:3px;
+  .bs-line {
+    height:3px; margin:6px 0;
     background:linear-gradient(90deg,var(--accent),var(--accent2));
-    border-radius:2px; margin:6px 0;
+    border-radius:2px;
   }
+
 
   @media(max-width:500px) {
     header h1 { font-size:1.9rem; }
@@ -546,18 +535,15 @@ function renderBersusun(q){
   const {op,a,b,ans,em} = q;
   const maxD = Math.max(String(a).length, String(b).length, String(ans).length);
 
-  const padDigits = (n, d) => String(n).padStart(d,'0').split('');
-  const aDigits = padDigits(a, maxD);
-  const bDigits = padDigits(b, maxD);
-  const ansDigits = padDigits(ans, maxD);
-
-  const colNames = ['Ribuan','Ratusan','Puluhan','Satuan'];
-  const labels = colNames.slice(colNames.length - maxD);
-
-  const digitRow = (digits, num) => digits.map((d, i) => {
-    const isEmpty = d==='0' && i < digits.length - String(num).length;
-    return `<div class="bersusun-digit${isEmpty?' empty':''}">${isEmpty?'':d}</div>`;
-  }).join('');
+  // right-aligned digit cells, leading blanks are invisible spacers
+  const digitCells = (n) => {
+    const s = String(n);
+    const pad = maxD - s.length;
+    let html = '';
+    for(let i=0;i<pad;i++) html += `<div class="bs-cell bs-empty"></div>`;
+    for(const c of s)      html += `<div class="bs-cell">${c}</div>`;
+    return html;
+  };
 
   const choices = makeChoices(ans);
   currentChoices = choices;
@@ -567,25 +553,25 @@ function renderBersusun(q){
     <div class="question-card">
       <div class="question-badge">Kelas ${currentKelas} — Bersusun</div>
       <span class="q-emoji">${em}</span>
-      <div class="question-hint" id="q-hint">Kerjakan dari kolom satuan (kanan) dulu!</div>
 
-      <div style="display:flex;justify-content:center;margin-top:8px">
-        <div class="bersusun-wrap">
-          <div class="bersusun-col-labels" style="padding-left:36px">
-            ${labels.map(l=>`<div class="col-label">${l}</div>`).join('')}
+      <div style="display:flex;justify-content:center;margin-top:12px;margin-bottom:4px">
+        <div class="bs-wrap">
+          <!-- baris angka atas -->
+          <div class="bs-row">
+            <div class="bs-op-slot"></div>
+            ${digitCells(a)}
           </div>
-          <div class="bersusun-row">
-            <div class="bersusun-operator" style="visibility:hidden">+</div>
-            ${digitRow(aDigits, a)}
+          <!-- baris angka bawah, operator di kiri sejajar -->
+          <div class="bs-row">
+            <div class="bs-op">${op}</div>
+            ${digitCells(b)}
           </div>
-          <div class="bersusun-row">
-            <div class="bersusun-operator">${op}</div>
-            ${digitRow(bDigits, b)}
-          </div>
-          <div style="padding-left:36px"><div class="bersusun-line"></div></div>
-          <div class="bersusun-row">
-            <div class="bersusun-operator" style="visibility:hidden">+</div>
-            ${ansDigits.map(()=>`<div class="bersusun-ans-box">?</div>`).join('')}
+          <!-- garis pembatas -->
+          <div class="bs-line"></div>
+          <!-- baris jawaban -->
+          <div class="bs-row">
+            <div class="bs-op-slot"></div>
+            ${Array(maxD).fill(0).map(()=>`<div class="bs-cell bs-ans">?</div>`).join('')}
           </div>
         </div>
       </div>
@@ -697,7 +683,7 @@ function checkOption(idx){
     handleWrong();
   }
   // reveal answer in bersusun boxes if present
-  const boxes=document.querySelectorAll('.bersusun-ans-box');
+  const boxes=document.querySelectorAll('.bs-ans');
   if(boxes.length){
     const digits=String(correct).padStart(boxes.length,'0').split('');
     boxes.forEach((box,i)=>{
