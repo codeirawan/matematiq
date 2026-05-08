@@ -575,6 +575,7 @@ function renderBersusun(q){
           </div>
         </div>
       </div>
+      <div class="question-hint" id="q-hint" style="min-height:20px;margin-top:6px;"></div>
     </div>
     <div id="feedback-box" class="feedback"></div>
     <div class="options">
@@ -647,24 +648,38 @@ function showHint(){
   const hint=document.getElementById('q-hint');
   if(!hint)return;
   hint.classList.add('show-hint');
+
+  // bersusun
   if(q&&q.type==='bersusun'){
-    const op=q.op;
-    if(op==='+'){
-      hint.textContent='💡 Mulai dari kolom SATUAN. Jika jumlahnya ≥10, simpan 1 ke kolom berikutnya!';
-    } else {
-      hint.textContent='💡 Mulai dari kolom SATUAN. Jika angka atas < bawah, pinjam 1 dari kolom sebelahnya!';
-    }
+    hint.textContent=q.op==='+'
+      ?'💡 Mulai dari kolom SATUAN. Jika jumlahnya ≥10, simpan 1 ke kolom berikutnya!'
+      :'💡 Mulai dari kolom SATUAN. Jika angka atas < bawah, pinjam 1 dari kolom sebelahnya!';
     return;
   }
+
+  // deteksi dari teks soal
+  if(q&&q.q){
+    if(q.q.includes('×')) { hint.textContent='💡 Ingat tabel perkalian! Atau hitung dengan penjumlahan berulang.'; return; }
+    if(q.q.includes('÷')) { hint.textContent='💡 Tanya: berapa kali pembagi masuk ke bilangan itu?'; return; }
+    if(q.q.includes('FPB')) { hint.textContent='💡 Cari faktor kedua bilangan, lalu pilih yang terbesar sama-sama ada!'; return; }
+    if(q.q.includes('KPK')) { hint.textContent='💡 Cari kelipatan kedua bilangan, lalu pilih yang terkecil sama-sama ada!'; return; }
+    if(q.q.includes('%')) { hint.textContent='💡 Persen = per seratus. Contoh: 25% = 25÷100 = 0,25'; return; }
+    if(q.q.includes('/')) { hint.textContent='💡 Samakan penyebut dulu, lalu jumlahkan pembilangnya!'; return; }
+    if(q.q.includes('Luas')) { hint.textContent='💡 Luas = panjang × lebar (persegi panjang) atau sisi × sisi (persegi)'; return; }
+    if(q.q.includes('Volume')) { hint.textContent='💡 Volume = panjang × lebar × tinggi'; return; }
+    if(q.q.includes('Kecepatan')||q.q.includes('Jarak')||q.q.includes('Waktu')) { hint.textContent='💡 Jarak = Kecepatan × Waktu'; return; }
+  }
+
+  // fallback per kelas
   const hints={
     1:'💡 Coba hitung pakai jari!',
-    2:'💡 Susun ke bawah: satuan + satuan, puluhan + puluhan!',
+    2:'💡 Susun ke bawah: satuan dulu, lalu puluhan!',
     3:'💡 Ingat tabel perkalian 1–10!',
     4:'💡 Kerjakan tanda kurung dulu, lalu ×÷, baru +-',
     5:'💡 Samakan penyebut dulu pakai KPK!',
-    6:'💡 Ingat rumus: Luas = panjang × lebar',
+    6:'💡 Ingat rumus bangun datar dan ruang!',
   };
-  hint.textContent=hints[currentKelas]||`💡 Jawaban: ${q.ans}`;
+  hint.textContent=hints[currentKelas]||`💡 Coba periksa lagi!`;
 }
 
 function checkOption(idx){
